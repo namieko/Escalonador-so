@@ -76,3 +76,20 @@ def escalonador_prioridade(tarefas_prontas: list[TCB], tarefa_atual: TCB | None)
 
     # Retorna a tarefa com a maior prioridade 
     return melhor_tarefa
+
+# REGISTRO DE ALGORITMOS 
+# Dicionário que mapeia nomes de algoritmos para as funções
+ALGORITMOS_REGISTRADOS = {
+    'FIFO': escalonador_fifo,
+    'SRTF': escalonador_srtf,
+    'PRIOP': escalonador_prioridade,
+}
+
+def get_escalonador_nome(nome_algoritmo: str):
+    """
+    Retorna a função de escalonamento real com base no nome (string).
+    """
+    funcao = ALGORITMOS_REGISTRADOS.get(nome_algoritmo.upper())
+    if not funcao:
+        raise ValueError(f"Algoritmo '{nome_algoritmo}' desconhecido.")
+    return funcao
