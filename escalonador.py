@@ -28,11 +28,13 @@ def escalonador_srtf(tarefas_prontas: list[TCB], tarefa_atual: TCB | None) -> TC
     for tarefa_candidata in tarefas_prontas[1:]:
         
         # Critério 1: Menor tempo restante.
-        if tarefa_candidata.tempo_restante < melhor_tarefa.tempo_restante:
+        # ADICIONADO () AQUI
+        if tarefa_candidata.tempo_restante() < melhor_tarefa.tempo_restante():
             melhor_tarefa = tarefa_candidata
             
         # se o tempo restante for igual
-        elif tarefa_candidata.tempo_restante == melhor_tarefa.tempo_restante:
+        # ADICIONADO () AQUI
+        elif tarefa_candidata.tempo_restante() == melhor_tarefa.tempo_restante():
             # Critério 2: Menor tempo de ingresso
             if tarefa_candidata.tempo_ingresso < melhor_tarefa.tempo_ingresso:
                 melhor_tarefa = tarefa_candidata
@@ -45,7 +47,6 @@ def escalonador_srtf(tarefas_prontas: list[TCB], tarefa_atual: TCB | None) -> TC
 
     # Retorna a melhor tarefa encontrada após a verificação
     return melhor_tarefa
-
 
 # Algoritmo de Prioridade Preemptivo 
 def escalonador_prioridade(tarefas_prontas: list[TCB], tarefa_atual: TCB | None) -> TCB | None:

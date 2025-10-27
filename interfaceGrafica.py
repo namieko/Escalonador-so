@@ -7,6 +7,8 @@ from simulador import Simulador # Importa o motor da simulação
 import carregador  # Importa o novo módulo carregador
 from cpu import CPU # Importa a classe CPU (necessária para o type hint do Simulador)
 from copy import deepcopy
+from PIL import Image, ImageDraw, ImageFont
+import os # Usaremos para extrair a extensão do arquivo
 
 # O nome da classe é 'App', como no seu rascunho
 class App:
@@ -169,9 +171,13 @@ class App:
         # Desenha a régua de tempo (ticks)
         for i in range(100): # Desenha 100 ticks iniciais
             x = self.gantt_margem_esquerda + i * self.gantt_tick_width
-            self.canvas_gantt.create_line(x, self.gantt_y_inicial - 20, x, self.gantt_y_inicial - 15, fill="#555")
+            
+            # Linhas dos ticks (movidas para cima, de -30 para -25)
+            self.canvas_gantt.create_line(x, self.gantt_y_inicial - 30, x, self.gantt_y_inicial - 25, fill="#555")
+            
             if i % 5 == 0: # Marca a cada 5 ticks
-                self.canvas_gantt.create_text(x, self.gantt_y_inicial - 10, text=str(i), anchor=tk.N, font=("Arial", 7))
+                # Texto (base do texto termina em -15, 5px acima do topo dos blocos)
+                self.canvas_gantt.create_text(x, self.gantt_y_inicial - 15, text=str(i), anchor=tk.S, font=("Arial", 7))
 
         # Habilita os botões para iniciar a simulação
         self.btn_step.config(state=tk.NORMAL)
@@ -278,26 +284,36 @@ class App:
                 tcb.prioridade, tcb.tempo_executado, tcb.tempo_restante()
             ))
 
-        # 3. Redesenha o Gráfico de Gantt
-        #    (Isso redesenha tudo a cada passo, mas é eficiente o bastante)
-        
-        # Limpa apenas os blocos de execução, não as linhas-guia
-        self.canvas_gantt.delete("execucao") 
-        
-        # Percorre o histórico de execução
-        for tick, id_tarefa in enumerate(self.simulador.historico_execucao):
+        # --- 3. Redesenha o Gráfico de Gantt ---
+        self.canvas_gantt.delete("execucao") # Limpa os blocos antigos
+
+        # Percorre o histórico de execução (que agora tem (id_exec, lista_prontos))
+        for tick, (id_executado, ids_prontos) in enumerate(self.simulador.historico_execucao):
             x1 = self.gantt_margem_esquerda + tick * self.gantt_tick_width
             x2 = x1 + self.gantt_tick_width
-            
-            if id_tarefa is not None:
-                cor = self.mapa_cores.get(id_tarefa, "black")
-                y_pos = self.mapa_linhas_gantt.get(id_tarefa)
-                
-                # Desenha o bloco de execução
-                self.canvas_gantt.create_rectangle(
-                    x1, y_pos - 10, x2, y_pos + 10, 
-                    fill=cor, outline="black", tags="execucao"
-                )
+
+            # 1. Desenha os blocos de "Pronto" (Req 2.1 - ausência de cor)
+            #    Isto é a barra "branca" do Maziero
+            for id_pronto in ids_prontos:
+                if id_pronto in self.mapa_linhas_gantt:
+                    y_pos = self.mapa_linhas_gantt[id_pronto]
+                    self.canvas_gantt.create_rectangle(
+                        x1, y_pos - 10, x2, y_pos + 10, 
+                        fill="white", outline="#ccc", tags="execucao"
+                    )
+
+            # 2. Desenha o bloco de "Executando" (Req 2.1 - cor)
+            #    Este bloco desenha *por cima* do bloco "Pronto" se
+            #    a tarefa estava pronta e foi escolhida no mesmo tick.
+            if id_executado is not None:
+                if id_executado in self.mapa_linhas_gantt:
+                    cor = self.mapa_cores.get(id_executado, "black")
+                    y_pos = self.mapa_linhas_gantt.get(id_executado)
+
+                    self.canvas_gantt.create_rectangle(
+                        x1, y_pos - 10, x2, y_pos + 10, 
+                        fill=cor, outline="black", tags="execucao"
+                    )
 
     def finalizar_simulacao(self):
         """ Chamado quando a simulação termina. """
@@ -312,9 +328,101 @@ class App:
         
         # Aqui você chamaria a função para salvar a imagem (Req 2.3)
         self.gerar_imagem_final()
-        
+
+
     def gerar_imagem_final(self):
-        """ (Pendente) Salva o gráfico de Gantt como uma imagem. """
-        # Esta função é mais complexa e requer bibliotecas como Pillow (PIL)
-        # para "printar" o canvas.
-        print("Requisito 2.3: Gerando imagem final... (Implementação pendente)")
+        """
+        Salva o gráfico de Gantt como um arquivo de imagem em alta resolução,
+        desenhando-o manualmente com a Pillow. Cumpre o Requisito 2.3.
+        """
+        if not self.simulador or not self.simulador.historico_execucao:
+            messagebox.showwarning("Nada para Salvar", "Execute uma simulação antes de salvar a imagem.", parent=self.root)
+            return
+
+        try:
+            # 1. Pergunta ao usuário onde salvar
+            caminho_arquivo = filedialog.asksaveasfilename(
+                title="Salvar Gráfico de Gantt como Imagem",
+                filetypes=[("PNG file", "*.png"), ("JPEG file", "*.jpg")],
+                defaultextension=".png"
+            )
+            if not caminho_arquivo:
+                print("Salvamento de imagem cancelado.")
+                return
+
+            # --- Parâmetros do Desenho ---
+            num_tasks = len(self.lista_de_tcbs)
+            num_ticks = len(self.simulador.historico_execucao)
+            
+            # Ajusta o tamanho da barra de ID (70px) e o tamanho de cada tick (15px)
+            margem_dir = 20
+            margem_inf = 50 # Espaço para a régua
+            
+            # Calcula o tamanho final da imagem
+            img_width = self.gantt_margem_esquerda + (num_ticks * self.gantt_tick_width) + margem_dir
+            img_height = self.gantt_y_inicial + (num_tasks * self.gantt_altura_linha) + margem_inf
+
+            # Tenta carregar uma fonte (Arial). Se falhar, usa a fonte padrão.
+            try:
+                # Ajuste o tamanho da fonte se desejar
+                fonte_label = ImageFont.truetype("arial.ttf", 16)
+                fonte_regua = ImageFont.truetype("arial.ttf", 10)
+            except IOError:
+                print("Fonte 'arial.ttf' não encontrada. Usando fonte padrão.")
+                fonte_label = ImageFont.load_default()
+                fonte_regua = ImageFont.load_default()
+            
+            # --- Inicia o Desenho ---
+            img = Image.new('RGB', (img_width, img_height), 'white')
+            draw = ImageDraw.Draw(img)
+
+            y_base_regua = -1 # Será calculado
+
+            # 2. Desenha as Tarefas (Labels e Linhas-guia)
+            for i, tcb in enumerate(sorted(self.lista_de_tcbs, key=lambda t: t.id)):
+                y_pos = self.gantt_y_inicial + i * self.gantt_altura_linha
+                cor = self.mapa_cores.get(tcb.id, "black")
+                
+                # Caixa de cor e ID
+                draw.rectangle((10, y_pos - 15, 60, y_pos + 15), fill=cor, outline="black")
+                draw.text((35, y_pos), f'T{tcb.id}', fill="white", font=fonte_label, anchor="mm")
+                
+                # Linha de tempo
+                draw.line((self.gantt_margem_esquerda, y_pos, img_width - margem_dir, y_pos), fill="#ccc", width=1)
+                
+                # Guarda o Y da última tarefa para a régua
+                if i == num_tasks - 1:
+                    y_base_regua = y_pos + 30
+
+            # 3. Desenha os Blocos de Execução (Pronto e Executando)
+            for tick, (id_executado, ids_prontos) in enumerate(self.simulador.historico_execucao):
+                x1 = self.gantt_margem_esquerda + tick * self.gantt_tick_width
+                x2 = x1 + self.gantt_tick_width
+
+                # Blocos "Pronto" (branco)
+                for id_pronto in ids_prontos:
+                    if id_pronto in self.mapa_linhas_gantt:
+                        y_pos = self.mapa_linhas_gantt[id_pronto]
+                        draw.rectangle((x1, y_pos - 10, x2, y_pos + 10), fill="white", outline="#ccc")
+                
+                # Bloco "Executando" (colorido)
+                if id_executado is not None and id_executado in self.mapa_linhas_gantt:
+                    y_pos = self.mapa_linhas_gantt[id_executado]
+                    cor = self.mapa_cores.get(id_executado, "black")
+                    draw.rectangle((x1, y_pos - 10, x2, y_pos + 10), fill=cor, outline="black")
+
+            # 4. Desenha a Régua de Tempo
+            if y_base_regua == -1: y_base_regua = 50 # Fallback
+            
+            for i in range(num_ticks + 1):
+                x = self.gantt_margem_esquerda + i * self.gantt_tick_width
+                draw.line((x, y_base_regua, x, y_base_regua + 5), fill="#555", width=1)
+                if i % 5 == 0:
+                    draw.text((x, y_base_regua + 7), str(i), fill="black", font=fonte_regua, anchor="mt")
+
+            # 5. Salva a imagem
+            img.save(caminho_arquivo)
+            messagebox.showinfo("Sucesso", f"Gráfico salvo com sucesso em:\n{caminho_arquivo}", parent=self.root)
+
+        except Exception as e:
+            messagebox.showerror("Erro ao Salvar Imagem", f"Não foi possível salvar a imagem: {e}", parent=self.root)
