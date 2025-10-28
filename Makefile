@@ -22,39 +22,58 @@ else
 endif
 
 # ==========================================================
-# Criação do ambiente virtual
+# Criação do ambiente virtual (com verificação automática)
 # ==========================================================
 $(VENV):
-	@echo Criando ambiente virtual...
+	@echo ">>> [Make] Criando ambiente virtual..."
+ifeq ($(OS),Windows_NT)
 	$(PYTHON) -m venv $(VENV)
+else
+	@if ! $(PYTHON) -m venv $(VENV) 2>/dev/null; then \
+		echo ">>> [Make] python3-venv não encontrado. Instalando..."; \
+		if command -v apt-get >/dev/null 2>&1; then \
+			sudo apt-get update && sudo apt-get install -y python3-venv; \
+		elif command -v dnf >/dev/null 2>&1; then \
+			sudo dnf install -y python3-venv; \
+		elif command -v pacman >/dev/null 2>&1; then \
+			sudo pacman -Sy --noconfirm python-virtualenv; \
+		else \
+			echo ">>> [Make] Gerenciador de pacotes não reconhecido. Instale python3-venv manualmente."; \
+			exit 1; \
+		fi; \
+		echo ">>> [Make] Tentando novamente criar o ambiente virtual..."; \
+		$(PYTHON) -m venv $(VENV); \
+	fi
+endif
+	@echo ">>> [Make] Ambiente virtual criado com sucesso!"
 
 # ==========================================================
 # Instala as dependências
 # ==========================================================
 install: $(VENV)
-	@echo Instalando dependências no ambiente virtual...
+	@echo ">>> [Make] Instalando dependências no ambiente virtual..."
 	$(PYTHON_VENV) -m pip install --upgrade pip
 	$(PYTHON_VENV) -m pip install -r requirements.txt
-	@echo Dependências instaladas com sucesso!
+	@echo ">>> [Make] Dependências instaladas com sucesso!"
 
 # ==========================================================
 # Compila o executável standalone
 # ==========================================================
 build: install
-	@echo Construindo executável standalone com PyInstaller...
+	@echo ">>> [Make] Construindo executável standalone com PyInstaller..."
 	$(PYTHON_VENV) -m PyInstaller --noconfirm --onefile --windowed main.py --name $(APP_NAME)
-	@echo.
-	@echo ====== Build concluído! ======
-	@echo O executável está em "dist/$(APP_NAME)".
+	@echo ""
+	@echo "====== Build concluído! ======"
+	@echo "O executável está em 'dist/$(APP_NAME)'."
 
 # ==========================================================
 # Limpeza
 # ==========================================================
 clean:
-	@echo Limpando arquivos temporários...
+	@echo ">>> [Make] Limpando arquivos temporários..."
 	-$(RM) *.spec >$(NULL) 2>&1 || true
 	-$(RMDIR) build >$(NULL) 2>&1 || true
 	-$(RMDIR) dist >$(NULL) 2>&1 || true
 	-$(RMDIR) __pycache__ >$(NULL) 2>&1 || true
 	-$(RMDIR) $(VENV) >$(NULL) 2>&1 || true
-	@echo Limpeza concluída!
+	@echo ">>> [Make] Limpeza concluída!"
