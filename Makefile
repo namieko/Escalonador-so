@@ -13,12 +13,14 @@ ifeq ($(OS),Windows_NT)
 	RM = del /Q /F
 	RMDIR = rmdir /S /Q
 	NULL = nul
+	RUN = dist\\$(APP_NAME).exe
 else
 	PYTHON = python3
 	PYTHON_VENV = $(VENV)/bin/python
 	RM = rm -f
 	RMDIR = rm -rf
 	NULL = /dev/null
+	RUN = ./dist/$(APP_NAME)
 endif
 
 # ==========================================================
@@ -32,13 +34,13 @@ else
 	@if ! $(PYTHON) -m venv $(VENV) 2>/dev/null; then \
 		echo ">>> [Make] python3-venv não encontrado. Instalando..."; \
 		if command -v apt-get >/dev/null 2>&1; then \
-			sudo apt-get update && sudo apt-get install -y python3-venv; \
+			sudo apt-get update && sudo apt-get install -y python3-venv python3-tk; \
 		elif command -v dnf >/dev/null 2>&1; then \
-			sudo dnf install -y python3-venv; \
+			sudo dnf install -y python3-venv python3-tkinter; \
 		elif command -v pacman >/dev/null 2>&1; then \
-			sudo pacman -Sy --noconfirm python-virtualenv; \
+			sudo pacman -Sy --noconfirm python-virtualenv tk; \
 		else \
-			echo ">>> [Make] Gerenciador de pacotes não reconhecido. Instale python3-venv manualmente."; \
+			echo ">>> [Make] Gerenciador de pacotes não reconhecido. Instale python3-venv e tkinter manualmente."; \
 			exit 1; \
 		fi; \
 		echo ">>> [Make] Tentando novamente criar o ambiente virtual..."; \
@@ -65,6 +67,13 @@ build: install
 	@echo ""
 	@echo "====== Build concluído! ======"
 	@echo "O executável está em 'dist/$(APP_NAME)'."
+
+# ==========================================================
+# Executa o programa (após o build)
+# ==========================================================
+run: build
+	@echo ">>> [Make] Executando $(APP_NAME)..."
+	@$(RUN)
 
 # ==========================================================
 # Limpeza
