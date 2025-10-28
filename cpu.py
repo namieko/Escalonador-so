@@ -1,6 +1,8 @@
 from tcb import TCB
 from enum import Enum, auto
 
+# Define os tipos de eventos que a CPU pode sinalizar ao simulador.
+# Enum pra deixar o código mais legível
 class EventoCPU(Enum):
     """Eventos que a CPU reporta ao Simulador após um tick."""
     NADA = auto()             # Tarefa executou, nada de especial
@@ -10,17 +12,19 @@ class EventoCPU(Enum):
 class CPU:
     """
     Representa um único processador (core) do sistema.
-    Gerencia a execução da tarefa atual e o contador de quantum.
+    Gerencia a execução da tarefa atual e o quantum.
     """
     def __init__(self, quantum_max: int):
         self.tarefa_atual: TCB | None = None
+        # Tempo máximo que uma tarefa pode executar sem ser preemptada
         self.quantum_max = quantum_max
+        # Contador para o tempo atual no quantum
         self.tempo_no_quantum = 0
 
     def carregar_tarefa(self, tarefa: TCB | None):
         """
-        Coloca uma nova tarefa na CPU (dispatch).
-        Isso é chamado pelo Simulador.
+        Coloca uma nova tarefa na CPU.
+        O simulador chama este método quando decide qual tarefa vai rodar.
         """
         self.tarefa_atual = tarefa
         self.tempo_no_quantum = 0 # Reseta o contador de quantum
@@ -30,7 +34,7 @@ class CPU:
 
     def remover_tarefa(self) -> TCB | None:
         """
-        Remove a tarefa atual da CPU (preempção).
+        Remove a tarefa atual da CPU.
         Retorna a tarefa que foi removida.
         """
         tarefa_preemptida = self.tarefa_atual
@@ -40,37 +44,32 @@ class CPU:
 
     def executar_passo(self) -> tuple[TCB | None, EventoCPU]:
         """
-        Executa um 'tick' na tarefa atual.
-        Isso simula o "Passo 4" da sua lógica anterior.
-        
-        Retorna a tarefa que acabou de executar e um Evento
-        para o Simulador (SO) saber o que fazer.
+        Simula a execução de um tick da CPU.
+        Retorna a tarefa que executou e o evento ocorrido.
         """
         # Se a CPU estiver ociosa, não faz nada
         if self.tarefa_atual is None:
             return (None, EventoCPU.NADA)
 
-        # --- Executa o tick ---
+        # Executa um tick na tarefa atual
         self.tarefa_atual.tempo_executado += 1
         self.tempo_no_quantum += 1
 
         tarefa_que_executou = self.tarefa_atual
 
-        # --- Verifica o estado PÓS-execução ---
-
-        # 4a. A tarefa terminou?
+        # Vê se a tarefa terminou
         if self.tarefa_atual.tempo_restante() == 0:
             self.remover_tarefa() # Limpa a CPU
             tarefa_que_executou.estado = "Terminada"
             # Reporta ao "SO" que a tarefa terminou
             return (tarefa_que_executou, EventoCPU.TAREFA_CONCLUIDA)
         
-        # 4b. O quantum estourou?
+        # Vê se o quantum expirou
         if self.tempo_no_quantum == self.quantum_max:
-            self.remover_tarefa() # Limpa a CPU
+            self.remover_tarefa() 
             tarefa_que_executou.estado = "Pronta"
             # Reporta ao "SO" que o quantum expirou
             return (tarefa_que_executou, EventoCPU.QUANTUM_EXPIRADO)
 
-        # 4c. Nada especial, a tarefa continua
+        # Senão, a tarefa continua
         return (tarefa_que_executou, EventoCPU.NADA)
