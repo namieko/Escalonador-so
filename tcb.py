@@ -1,26 +1,26 @@
-# tcb.py (ATUALIZADO)
 from dataclasses import dataclass, field
 from typing import List
 
 @dataclass
 class TCB:
-    """Representa o Bloco de Controle de Tarefa (TCB)."""
+    """
+    Bloco de Controle de Tarefa (Task Control Block).
+    Guarda as informações de cada processo/tarefa.
+    """
     
-    # --- Atributos de Configuração (lidos do arquivo) ---
+    # Atributos de cada tarefa
     id: int
     cor: str
     tempo_ingresso: int
     duracao_total: int
     prioridade: int
-    
-    # Adiciona o campo para 'lista_eventos' (Req. 3.3.2)
-    # 'field(default_factory=list)' garante que seja uma lista vazia
+    # Campo para futura 'lista_eventos' (Req. 3.3.2)
     lista_eventos: List[str] = field(default_factory=list) 
 
-    # --- Atributos de Estado (controlados pelo simulador) ---
+    # Campos dinâmicos que serão atualizados durante a simulação
     estado: str = "Nova"
     tempo_executado: int = 0
 
     def tempo_restante(self) -> int:
-        """Calcula o tempo de CPU restante para a tarefa."""
+        """Calcula o tempo que ainda falta para a tarefa terminar."""
         return self.duracao_total - self.tempo_executado

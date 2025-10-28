@@ -1,4 +1,3 @@
-# cpu.py
 from tcb import TCB
 from enum import Enum, auto
 
