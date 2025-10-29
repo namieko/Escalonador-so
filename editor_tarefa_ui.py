@@ -1,10 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from tcb import TCB
-# Importamos 'App' apenas para type hinting (dica de tipo)
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from interfaceGrafica import App
 
 class EditorTarefaFrame(ttk.LabelFrame):
     """
@@ -12,7 +8,7 @@ class EditorTarefaFrame(ttk.LabelFrame):
     adicionar, editar e remover tarefas (TCBs)
     """
     # Construtor: recebe o frame pai (onde será colocado) e uma referência à classe App principal
-    def __init__(self, parent_frame, app_ref: 'App'):
+    def __init__(self, parent_frame, app_ref):
         # Inicializa a classe pai (ttk.LabelFrame) com o título "Editor de Tarefa"
         super().__init__(parent_frame, text="Editor de Tarefa", padding=10)
         
@@ -22,7 +18,7 @@ class EditorTarefaFrame(ttk.LabelFrame):
         
         # Variável para guardar o ID da tarefa que está sendo editada
         # Se for None, significa que está no modo "Adicionar Nova"
-        self.id_tarefa_em_edicao: int | None = None
+        self.id_tarefa_em_edicao = None
 
         # Criação dos Widgets Internos do Editor 
 
@@ -52,11 +48,11 @@ class EditorTarefaFrame(ttk.LabelFrame):
 
         # Botões com seus respectivos comandos (métodos desta classe)
         self.btn_adicionar_nova = ttk.Button(botoes_editor_frame, text="Adicionar Nova",
-                                             command=self.preparar_para_nova_tarefa)
+                                             command=self.nova_tarefa)
         self.btn_adicionar_nova.pack(fill=tk.X, pady=2)
 
         self.btn_salvar = ttk.Button(botoes_editor_frame, text="Salvar/Atualizar Tarefa",
-                                     command=self.salvar_ou_atualizar, state=tk.DISABLED)
+                                     command=self.salvar_tarefa, state=tk.DISABLED)
         self.btn_salvar.pack(fill=tk.X, pady=2)
 
         self.btn_remover = ttk.Button(botoes_editor_frame, text="Remover Selecionada",
@@ -84,7 +80,7 @@ class EditorTarefaFrame(ttk.LabelFrame):
         # Mantém o botão "Adicionar Nova" habilitado (a menos que a simulação esteja rodando)
         # O estado dele é controlado pela classe App
 
-    def preparar_para_edicao(self, tcb: TCB):
+    def carregar_edicao(self, tcb):
         """Preenche o editor com os dados de um TCB existente (modo edição)"""
         self.id_tarefa_em_edicao = tcb.id
         self.label_id_edicao.config(text=str(tcb.id))
@@ -103,7 +99,7 @@ class EditorTarefaFrame(ttk.LabelFrame):
         self.entry_prioridade.delete(0, 'end'); self.entry_prioridade.insert(0, str(tcb.prioridade))
         self.entry_cor.delete(0, 'end'); self.entry_cor.insert(0, tcb.cor)
 
-    def preparar_para_nova_tarefa(self):
+    def nova_tarefa(self):
         """Limpa o editor e preenche com valores padrão para adicionar uma nova tarefa."""
         self.id_tarefa_em_edicao = None # Entra no modo "Adicionar"
         
@@ -128,7 +124,7 @@ class EditorTarefaFrame(ttk.LabelFrame):
         self.entry_prioridade.delete(0, 'end'); self.entry_prioridade.insert(0, "1")
         self.entry_cor.delete(0, 'end'); self.entry_cor.insert(0, "gray")
 
-    def salvar_ou_atualizar(self):
+    def salvar_tarefa(self):
         """Salva uma nova tarefa ou atualiza uma existente na lista principal da App"""
         # try para capturar erros de digitação/validação
         try: 
@@ -169,7 +165,7 @@ class EditorTarefaFrame(ttk.LabelFrame):
                 messagebox.showinfo("Sucesso", f"Tarefa T{novo_tcb.id} criada.", parent=self.app.root)
 
             # Chama o método da App para redesenhar toda a interface (Gantt e Tabela)
-            self.app.preparar_visualizacao_completa()
+            self.app.preparar_visualizacao()
 
         except ValueError as e:
             messagebox.showerror("Erro de Formato", f"Erro nos dados: {e}. Verifique os campos.", parent=self.app.root)
@@ -189,4 +185,4 @@ class EditorTarefaFrame(ttk.LabelFrame):
             self.app.lista_de_tcbs.remove(tcb_para_remover)
             messagebox.showinfo("Removido", f"Tarefa T{tcb_para_remover.id} removida.", parent=self.app.root)
             # Chama o método da App para redesenhar toda a interface
-            self.app.preparar_visualizacao_completa()
+            self.app.preparar_visualizacao()

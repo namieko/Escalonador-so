@@ -1,6 +1,5 @@
 import tkinter as tk
 from tcb import TCB
-from typing import Dict, List, Tuple
 
 class GanttCanvas(tk.Canvas):
     """
@@ -17,8 +16,8 @@ class GanttCanvas(tk.Canvas):
         self.tick_width = 15
 
         # Dicionários internos para guardar cores e posições
-        self.mapa_cores: Dict[int, str] = {}
-        self.mapa_linhas_y: Dict[int, int] = {}
+        self.mapa_cores = {}
+        self.mapa_linhas_y = {}
 
     def limpar_tudo(self):
         """Apaga todo o conteúdo do canvas."""
@@ -30,7 +29,7 @@ class GanttCanvas(tk.Canvas):
         """Apaga apenas os blocos de execução (mantém o esqueleto)."""
         self.delete("execucao") # Usa a tag definida ao criar os blocos
 
-    def desenhar_esqueleto(self, tcbs: List[TCB]):
+    def desenhar_esqueleto(self, tcbs):
         """
         Desenha as linhas, labels das tarefas e a régua de tempo.
         Deve ser chamado uma vez após carregar as tarefas.
@@ -62,7 +61,7 @@ class GanttCanvas(tk.Canvas):
                 # faz o texto ficar acima da linha da primeira tarefa
                 self.create_text(x, self.y_inicial - 15, text=str(i), anchor=tk.S, font=("Arial", 7))
 
-    def atualizar_blocos(self, historico: List[Tuple[int | None, List[int]]]):
+    def atualizar_blocos(self, historico):
         """
         Desenha os blocos de execução (Pronto e Executando) com base
         no histórico fornecido pelo simulador.

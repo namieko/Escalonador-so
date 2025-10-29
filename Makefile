@@ -8,11 +8,10 @@
 # Antes de usar este Makefile, certifique-se de que os seguintes
 # softwares estejam instalados no seu sistema:
 # 1. Python 3 (python3)
-# 2. Pip (python3-pip)
-# 3. Módulo venv do Python (python3-venv) - essencial para criar o ambiente virtual.
-# 4. Módulo Tkinter do Python (python3-tk) - essencial para a interface gráfica.
-# 5. Make (make) - a ferramenta para rodar este arquivo.
-# 6. Git (git) - opcional, apenas para clonar o repositório.
+# 2. Módulo venv do Python (python3-venv) - essencial para criar o ambiente virtual.
+# 3. Módulo Tkinter do Python (python3-tk) - essencial para a interface gráfica.
+# 4. Make (make) - a ferramenta para rodar este arquivo.
+# 5. Git (git) - opcional, apenas para clonar o repositório.
 #
 # Comandos de Instalação:
 #   Debian/Ubuntu: sudo apt install python3 python3-pip python3-venv python3-tk make git

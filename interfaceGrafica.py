@@ -20,8 +20,8 @@ class App:
         self.root.geometry("1000x700")
 
         # Estado interno
-        self.simulador: Simulador | None = None # Objeto que controla a execução
-        self.lista_de_tcbs: list[TCB] = [] # Lista principal com os TCBs (carregados ou editados)
+        self.simulador = None # Objeto que controla a execução
+        self.lista_de_tcbs = [] # Lista principal com os TCBs (carregados ou editados)
 
         # Frame Superior (barra de ferramentas)
         control_frame = ttk.Frame(root, padding="10")
@@ -31,10 +31,10 @@ class App:
         self.btn_load = ttk.Button(control_frame, text="Carregar Arquivo", command=self.carregar_arquivo)
         self.btn_load.pack(side=tk.LEFT, padx=5)
         self.btn_step = ttk.Button(control_frame, text="Próximo Passo",
-                                   state=tk.DISABLED, command=self.executar_passo_gui)
+                                  state=tk.DISABLED, command=self.executar_passo)
         self.btn_step.pack(side=tk.LEFT, padx=5)
         self.btn_run_all = ttk.Button(control_frame, text="Execução Completa",
-                                      state=tk.DISABLED, command=self.executar_tudo_gui)
+                                      state=tk.DISABLED, command=self.executar_tudo)
         self.btn_run_all.pack(side=tk.LEFT, padx=5)
 
         # Seleção do algoritmo de escalonamento
@@ -85,8 +85,8 @@ class App:
         scrollbar = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=self.tree_processos.yview)
         self.tree_processos.configure(yscroll=scrollbar.set)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        # Associa o evento de seleção na tabela ao método 'ao_selecionar_tarefa_para_edicao'
-        self.tree_processos.bind('<<TreeviewSelect>>', self.ao_selecionar_tarefa_para_edicao)
+        # Associa o evento de seleção na tabela ao método 'ao_selecionar_tarefa'
+        self.tree_processos.bind('<<TreeviewSelect>>', self.ao_selecionar_tarefa)
 
         # Frame para o Editor de Tarefa (Instância da classe EditorTarefaFrame)
         self.editor_frame = EditorTarefaFrame(self.frame_processos, self)
@@ -111,14 +111,14 @@ class App:
             if algoritmo_arquivo in self.algoritmos_disponiveis:
                 self.combo_algoritmo.set(algoritmo_arquivo)
             self.spin_quantum.delete(0, 'end'); self.spin_quantum.insert(0, str(dados.quantum))
-            self.preparar_visualizacao_completa()
+            self.preparar_visualizacao()
             messagebox.showinfo("Sucesso", f"{len(self.lista_de_tcbs)} processos carregados!")
         except Exception as e:
             messagebox.showerror("Erro de Leitura", f"Não foi possível ler ou processar o arquivo: {e}")
             self.lista_de_tcbs.clear()
-            self.preparar_visualizacao_completa()
+            self.preparar_visualizacao()
 
-    def preparar_visualizacao_completa(self):
+    def preparar_visualizacao(self):
         """ Redesenha TODA a visualização (Gantt e Tabela) com base em self.lista_de_tcbs """
         self.resetar_simulacao() # Limpa o estado da simulação e reseta controles
         # A limpeza total do canvas do Gantt é a classe GanttCanvas que faz
@@ -164,7 +164,7 @@ class App:
             # Re-habilita o botão de adicionar nova tarefa
             self.editor_frame.btn_adicionar_nova.config(state=tk.NORMAL)
 
-    def ao_selecionar_tarefa_para_edicao(self, event):
+    def ao_selecionar_tarefa(self, event):
         """ Chamado ao clicar na tabela. Pede que o EditorTarefaFrame preencha """
         try:
             selected_item = self.tree_processos.focus() 
@@ -175,7 +175,7 @@ class App:
             tcb_para_editar = next((t for t in self.lista_de_tcbs if t.id == task_id), None)
             if tcb_para_editar and hasattr(self, 'editor_frame'):
                 # Delega o preenchimento para o editor
-                self.editor_frame.preparar_para_edicao(tcb_para_editar)
+                self.editor_frame.carregar_edicao(tcb_para_editar)
         except Exception as e:
             print(f"Erro ao selecionar tarefa: {e}")
             if hasattr(self, 'editor_frame'): self.editor_frame.desabilitar()
@@ -185,10 +185,11 @@ class App:
         if hasattr(self, 'tree_processos'):
             self.tree_processos.selection_remove(self.tree_processos.selection())
 
-    def iniciar_simulacao_se_necessario(self) -> bool:
+    def iniciar_simulacao(self):
         """ Cria o objeto Simulador usando os dados atuais da lista_de_tcbs """
         # Se o simulador já existe, não faz nada e retorna True
         if self.simulador: return True
+        
         if not self.lista_de_tcbs:
             messagebox.showerror("Erro", "Nenhuma tarefa para simular.")
             return False
@@ -215,24 +216,24 @@ class App:
              # Garante que o botão "Adicionar Nova" também seja desabilitado
              self.editor_frame.btn_adicionar_nova.config(state=tk.DISABLED)
 
-    def executar_passo_gui(self):
+    def executar_passo(self):
         """ Executa um passo da simulação """
-        if not self.iniciar_simulacao_se_necessario(): return
+        if not self.iniciar_simulacao(): return
         # Chama o método 'executar_passo' do Simulador
         if self.simulador.executar_passo():
-            self.atualizar_gui_durante_simulacao()
+            self.atualizar_gui()
         else:
             self.finalizar_simulacao()
 
-    def executar_tudo_gui(self):
+    def executar_tudo(self):
         """ Executa a simulação inteira """
-        if not self.iniciar_simulacao_se_necessario(): return
+        if not self.iniciar_simulacao(): return
         # Loop enquanto 'executar_passo' do simulador retornar True
         while self.simulador.executar_passo(): pass
-        self.atualizar_gui_durante_simulacao()
+        self.atualizar_gui()
         self.finalizar_simulacao()
 
-    def atualizar_gui_durante_simulacao(self):
+    def atualizar_gui(self):
         """ Redesenha o estado atual (Relógio, Tabela, Gantt) """
         if not self.simulador: return
 
