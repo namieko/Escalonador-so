@@ -1,5 +1,5 @@
 # ==========================================================
-# Makefile universal - Python + venv + PyInstaller
+# Makefile - Python + venv + PyInstaller
 # Funciona em Windows (Chocolatey Make) e Linux
 # ==========================================================
 
@@ -23,9 +23,7 @@ else
 	RUN = ./dist/$(APP_NAME)
 endif
 
-# ==========================================================
-# Criação do ambiente virtual (com verificação automática)
-# ==========================================================
+# Criação do ambiente virtual 
 $(VENV):
 	@echo ">>> [Make] Criando ambiente virtual..."
 ifeq ($(OS),Windows_NT)
@@ -49,18 +47,14 @@ else
 endif
 	@echo ">>> [Make] Ambiente virtual criado com sucesso!"
 
-# ==========================================================
 # Instala as dependências
-# ==========================================================
 install: $(VENV)
 	@echo ">>> [Make] Instalando dependências no ambiente virtual..."
 	$(PYTHON_VENV) -m pip install --upgrade pip
 	$(PYTHON_VENV) -m pip install -r requirements.txt
 	@echo ">>> [Make] Dependências instaladas com sucesso!"
 
-# ==========================================================
 # Compila o executável standalone
-# ==========================================================
 build: install
 	@echo ">>> [Make] Construindo executável standalone com PyInstaller..."
 	$(PYTHON_VENV) -m PyInstaller --noconfirm --onefile --windowed main.py --name $(APP_NAME)
@@ -68,16 +62,12 @@ build: install
 	@echo "====== Build concluído! ======"
 	@echo "O executável está em 'dist/$(APP_NAME)'."
 
-# ==========================================================
 # Executa o programa (após o build)
-# ==========================================================
 run: build
 	@echo ">>> [Make] Executando $(APP_NAME)..."
 	@$(RUN)
 
-# ==========================================================
 # Limpeza
-# ==========================================================
 clean:
 	@echo ">>> [Make] Limpando arquivos temporários..."
 	-$(RM) *.spec >$(NULL) 2>&1 || true

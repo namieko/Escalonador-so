@@ -1,4 +1,3 @@
-# editor_tarefa_ui.py
 import tkinter as tk
 from tkinter import ttk, messagebox
 from tcb import TCB
@@ -10,21 +9,22 @@ if TYPE_CHECKING:
 class EditorTarefaFrame(ttk.LabelFrame):
     """
     Frame que contém os widgets e a lógica para
-    adicionar, editar e remover tarefas (TCBs).
+    adicionar, editar e remover tarefas (TCBs)
     """
+    # Construtor: recebe o frame pai (onde será colocado) e uma referência à classe App principal
     def __init__(self, parent_frame, app_ref: 'App'):
-        # Chama o construtor do LabelFrame, definindo o texto do frame
+        # Inicializa a classe pai (ttk.LabelFrame) com o título "Editor de Tarefa"
         super().__init__(parent_frame, text="Editor de Tarefa", padding=10)
         
         # Guarda uma referência à classe principal (App) para poder
-        # acessar a lista_de_tcbs e chamar o método de redesenhar.
+        # acessar a lista_de_tcbs e chamar o método de redesenhar
         self.app = app_ref
         
-        # Variável para guardar o ID da tarefa que está sendo editada.
-        # Se for None, significa que está no modo "Adicionar Nova".
+        # Variável para guardar o ID da tarefa que está sendo editada
+        # Se for None, significa que está no modo "Adicionar Nova"
         self.id_tarefa_em_edicao: int | None = None
 
-        # --- Criação dos Widgets Internos do Editor ---
+        # Criação dos Widgets Internos do Editor 
 
         ttk.Label(self, text="ID da Tarefa:").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
         self.label_id_edicao = ttk.Label(self, text="N/A", font=("Arial", 10, "bold"))
@@ -63,13 +63,13 @@ class EditorTarefaFrame(ttk.LabelFrame):
                                       command=self.remover_tarefa, state=tk.DISABLED)
         self.btn_remover.pack(fill=tk.X, pady=2)
 
-        # Começa com o editor desabilitado
+        # Chama o método para deixar o editor limpo e desabilitado no início
         self.desabilitar()
 
     def desabilitar(self):
         """Limpa e desabilita todos os campos e botões do editor."""
         self.id_tarefa_em_edicao = None # Sai do modo de edição
-        self.label_id_edicao.config(text="N/A")
+        self.label_id_edicao.config(text="N/A") # Limpa o label do ID
         
         # Limpa e desabilita cada campo de entrada
         self.entry_ingresso.delete(0, 'end'); self.entry_ingresso.config(state=tk.DISABLED)
@@ -82,10 +82,10 @@ class EditorTarefaFrame(ttk.LabelFrame):
         self.btn_remover.config(state=tk.DISABLED)
         
         # Mantém o botão "Adicionar Nova" habilitado (a menos que a simulação esteja rodando)
-        # O estado dele será controlado pela classe App.
+        # O estado dele é controlado pela classe App
 
     def preparar_para_edicao(self, tcb: TCB):
-        """Preenche o editor com os dados de um TCB existente."""
+        """Preenche o editor com os dados de um TCB existente (modo edição)"""
         self.id_tarefa_em_edicao = tcb.id
         self.label_id_edicao.config(text=str(tcb.id))
 
@@ -104,17 +104,17 @@ class EditorTarefaFrame(ttk.LabelFrame):
         self.entry_cor.delete(0, 'end'); self.entry_cor.insert(0, tcb.cor)
 
     def preparar_para_nova_tarefa(self):
-        """Limpa o editor para adicionar uma nova tarefa."""
+        """Limpa o editor e preenche com valores padrão para adicionar uma nova tarefa."""
         self.id_tarefa_em_edicao = None # Entra no modo "Adicionar"
         
         # Deseleciona qualquer item na tabela principal (chamando método da App)
         self.app.deselecionar_tabela() 
         
-        # Calcula um novo ID seguro
+        # Calcula o próximo ID disponível (maior ID na lista da App + 1)
         new_id = max([t.id for t in self.app.lista_de_tcbs] + [0]) + 1
         self.label_id_edicao.config(text=str(new_id))
 
-        # Habilita os campos
+        # Habilita os campos e o botão de salvar
         self.entry_ingresso.config(state=tk.NORMAL)
         self.entry_duracao.config(state=tk.NORMAL)
         self.entry_prioridade.config(state=tk.NORMAL)
@@ -122,15 +122,16 @@ class EditorTarefaFrame(ttk.LabelFrame):
         self.btn_salvar.config(state=tk.NORMAL)
         self.btn_remover.config(state=tk.DISABLED) # Não pode remover o que não existe
 
-        # Limpa e insere valores padrão
+        # Limpa e insere valores padrão sugeridos
         self.entry_ingresso.delete(0, 'end'); self.entry_ingresso.insert(0, "0")
         self.entry_duracao.delete(0, 'end'); self.entry_duracao.insert(0, "5")
         self.entry_prioridade.delete(0, 'end'); self.entry_prioridade.insert(0, "1")
         self.entry_cor.delete(0, 'end'); self.entry_cor.insert(0, "gray")
 
     def salvar_ou_atualizar(self):
-        """Salva (se nova) ou atualiza (se existente) o TCB."""
-        try:
+        """Salva uma nova tarefa ou atualiza uma existente na lista principal da App"""
+        # try para capturar erros de digitação/validação
+        try: 
             # Pega os valores dos campos
             novo_ingresso = int(self.entry_ingresso.get())
             nova_duracao = int(self.entry_duracao.get())
@@ -141,7 +142,7 @@ class EditorTarefaFrame(ttk.LabelFrame):
             if not nova_cor: raise ValueError("A cor não pode estar vazia.")
             if nova_duracao <= 0: raise ValueError("Duração deve ser maior que zero.")
 
-            # --- MODO EDIÇÃO ---
+            # Verifica se está em modo EDIÇÃO (id_tarefa_em_edicao tem um número)
             if self.id_tarefa_em_edicao is not None:
                 # Encontra o TCB na lista principal (da App) e o atualiza
                 tcb_para_editar = next((t for t in self.app.lista_de_tcbs if t.id == self.id_tarefa_em_edicao), None)
@@ -151,7 +152,7 @@ class EditorTarefaFrame(ttk.LabelFrame):
                     tcb_para_editar.prioridade = nova_prioridade
                     tcb_para_editar.cor = nova_cor
                     messagebox.showinfo("Sucesso", f"Tarefa T{tcb_para_editar.id} atualizada.", parent=self.app.root)
-            # --- MODO CRIAÇÃO ---
+            # Senão, está em modo CRIAÇÃO (id_tarefa_em_edicao é None)
             else:
                 novo_id = int(self.label_id_edicao.cget("text"))
                 # Verifica se ID já existe na lista principal (da App)
@@ -167,7 +168,7 @@ class EditorTarefaFrame(ttk.LabelFrame):
                 self.app.lista_de_tcbs.append(novo_tcb)
                 messagebox.showinfo("Sucesso", f"Tarefa T{novo_tcb.id} criada.", parent=self.app.root)
 
-            # Chama o método da App para redesenhar toda a interface
+            # Chama o método da App para redesenhar toda a interface (Gantt e Tabela)
             self.app.preparar_visualizacao_completa()
 
         except ValueError as e:
@@ -176,7 +177,7 @@ class EditorTarefaFrame(ttk.LabelFrame):
             messagebox.showerror("Erro", f"Não foi possível salvar a tarefa: {e}", parent=self.app.root)
 
     def remover_tarefa(self):
-        """Remove a tarefa selecionada."""
+        """Remove a tarefa selecionada no editor da lista principal da App"""
         if self.id_tarefa_em_edicao is None: return
 
         # Encontra a tarefa na lista principal (da App)

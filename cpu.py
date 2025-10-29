@@ -1,11 +1,11 @@
 from tcb import TCB
 from enum import Enum, auto
 
-# Define os tipos de eventos que a CPU pode sinalizar ao simulador.
-# Enum pra deixar o código mais legível
+# Define os tipos de eventos que a CPU pode gerar
+# Enum pra evitar erros com strings
 class EventoCPU(Enum):
     """Eventos que a CPU reporta ao Simulador após um tick."""
-    NADA = auto()             # Tarefa executou, nada de especial
+    NADA = auto()              # Tarefa executou, nada de especial
     TAREFA_CONCLUIDA = auto()  # Tarefa terminou (tempo_restante == 0)
     QUANTUM_EXPIRADO = auto()  # Quantum da tarefa expirou
 
@@ -18,7 +18,7 @@ class CPU:
         self.tarefa_atual: TCB | None = None
         # Tempo máximo que uma tarefa pode executar sem ser preemptada
         self.quantum_max = quantum_max
-        # Contador para o tempo atual no quantum
+        # Contador para saber quanto tempo a tarefa atual já executou nesse quantum
         self.tempo_no_quantum = 0
 
     def carregar_tarefa(self, tarefa: TCB | None):
@@ -47,7 +47,7 @@ class CPU:
         Simula a execução de um tick da CPU.
         Retorna a tarefa que executou e o evento ocorrido.
         """
-        # Se a CPU estiver ociosa, não faz nada
+        # Se não tem tarefa, não faz nada
         if self.tarefa_atual is None:
             return (None, EventoCPU.NADA)
 
@@ -71,5 +71,5 @@ class CPU:
             # Reporta ao "SO" que o quantum expirou
             return (tarefa_que_executou, EventoCPU.QUANTUM_EXPIRADO)
 
-        # Senão, a tarefa continua
+        # Senão, a tarefa continua executanto normalmente
         return (tarefa_que_executou, EventoCPU.NADA)

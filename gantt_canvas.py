@@ -1,4 +1,3 @@
-# gantt_canvas.py
 import tkinter as tk
 from tcb import TCB
 from typing import Dict, List, Tuple
@@ -11,13 +10,13 @@ class GanttCanvas(tk.Canvas):
         # Chama o construtor do tk.Canvas original
         super().__init__(parent_frame, bg="white", **kwargs)
 
-        # Parâmetros de desenho (podem ser ajustados)
+        # Parâmetros de desenho 
         self.y_inicial = 50
         self.altura_linha = 40
         self.margem_esquerda = 70
         self.tick_width = 15
 
-        # Dicionários internos para mapeamento
+        # Dicionários internos para guardar cores e posições
         self.mapa_cores: Dict[int, str] = {}
         self.mapa_linhas_y: Dict[int, int] = {}
 
@@ -39,14 +38,14 @@ class GanttCanvas(tk.Canvas):
         self.limpar_tudo()
         if not tcbs: return
 
-        # Ordena por ID para consistência
+        # Ordena por ID 
         tcbs_ordenados = sorted(tcbs, key=lambda t: t.id)
 
-        # Desenha cada linha de tarefa
+        # Desenha cada linha de tarefa, iterando sobre a lista de tarefas
         for i, tcb in enumerate(tcbs_ordenados):
-            self.mapa_cores[tcb.id] = tcb.cor # Guarda a cor
+            self.mapa_cores[tcb.id] = tcb.cor # Guarda a cor, usando o ID como chave
             y_pos = self.y_inicial + i * self.altura_linha
-            self.mapa_linhas_y[tcb.id] = y_pos # Guarda a posição Y
+            self.mapa_linhas_y[tcb.id] = y_pos # Guarda a posição Y, usando o ID como chave
 
             # Caixa de cor e ID
             self.create_rectangle(10, y_pos - 15, 60, y_pos + 15, fill=tcb.cor, outline="black")
@@ -60,7 +59,7 @@ class GanttCanvas(tk.Canvas):
             # Linhas dos ticks
             self.create_line(x, self.y_inicial - 30, x, self.y_inicial - 25, fill="#555")
             if i % 5 == 0: # Marca a cada 5 ticks
-                # Texto (ancorado no Sul, cresce para cima)
+                # faz o texto ficar acima da linha da primeira tarefa
                 self.create_text(x, self.y_inicial - 15, text=str(i), anchor=tk.S, font=("Arial", 7))
 
     def atualizar_blocos(self, historico: List[Tuple[int | None, List[int]]]):
@@ -70,6 +69,8 @@ class GanttCanvas(tk.Canvas):
         """
         self.limpar_blocos_execucao() # Apaga os blocos antigos
 
+        # Itera sobre o histórico
+        # 'enumerate' fornece o índice (tick) e o valor (tupla)
         for tick, (id_executado, ids_prontos) in enumerate(historico):
             x1 = self.margem_esquerda + tick * self.tick_width
             x2 = x1 + self.tick_width

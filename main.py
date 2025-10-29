@@ -12,7 +12,8 @@ def main():
     """Função principal que inicializa e executa a aplicação."""
     
     try:
-        root = tk.Tk()  # Cria a janela principal da aplicação
+        # Cria a janela principal da aplicação
+        root = tk.Tk()  
         
         # Cria a instância da GUI
         app = App(root)
@@ -23,6 +24,6 @@ def main():
     except Exception as e:
         print(f"Ocorreu um erro fatal ao iniciar a aplicação: {e}")
 
-# onto de Entrada 
+# Ponto de Entrada 
 if __name__ == "__main__":
     main()
